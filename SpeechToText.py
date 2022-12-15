@@ -20,7 +20,6 @@ def install_packages():
     if missing:
         subprocess.check_call([sys.executable, "-m", "pip", "install", *missing])
 
-
 class MicrophoneAudio():
     def __init__(self, deviceindex):
         self.DEVICE_INDEX = deviceindex
@@ -41,7 +40,6 @@ class MicrophoneAudio():
                                 frames_per_buffer=self.CHUNK)
         self.quit = False
         self.recThread = threading.Thread(target=self.record_microphone, args={}, name="RecordingThread").start()
-
         
 
     def record_microphone(self):
@@ -65,3 +63,50 @@ class MicrophoneAudio():
 
     def __del__(self):
         self.close()
+
+
+
+class SpeechToText():
+    def __init__(self, deviceindex):
+        self.audio = MicrophoneAudio(deviceindex)
+        self.model = Model(model_name="vosk-model-small-en-us-0.15")
+        self.rec = KaldiRecognizer(self.model, self.audio.FRAME_RATE)
+        self.rec.SetWords(True)
+        self.quit = False
+        self.SpeechToTextThread = threading.Thread(target=self.speech_recognition, args=(), name="SpeechToTextThread").start()
+    
+
+    def speech_recognition(self):
+        while not self.quit:
+            frames = self.audio.recordings.get()
+            self.rec.AcceptWaveform(b''.join(frames))
+            result = self.rec.Result()
+            text = json.loads(result)["text"]
+            if text != "":
+                print(f"{text}", end=' ')
+            #time.sleep(1)
+        self.audio.close()
+        print("SpeechToText was Successfully Terminated!")
+
+
+    def close(self):
+        self.quit = True
+        
+
+    def __del__(self):
+        self.close()
+
+if __name__ == "__main__":
+    #install_packages()
+
+    p = pyaudio.PyAudio()
+    deviceinfo = p.get_default_input_device_info()
+    index = deviceinfo['index']
+    print(f"Device with name \" {deviceinfo['name']} \" and index \"{index}\" was selected")
+    p.terminate()
+    
+    ai = SpeechToText(index)
+    print("Converting Speech To Text!")
+    input("Enter any key to quit!\n")
+    ai.close()
+    cv2.destroyAllWindows()
