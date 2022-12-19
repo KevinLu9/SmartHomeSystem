@@ -82,13 +82,12 @@ class SpeechToText():
         self.audioInt = []
         self.THRESHOLD = threshold  # The audio magnitude threshold to continue to record/buffer without inputting to Vosk AI.
 
-        
+
     def speech_recognition(self):
         while not self.quit:
             frames = self.audio.recordings.get()
             # convert frames to int so that we can plot them
             audioBit = b''.join(frames)
-            
             # Buffer audio before inputting into VOSK AI to prevent cut offs
             latestAudioBit = audioBit
             audioMagnitude = self.THRESHOLD
@@ -126,8 +125,8 @@ class SpeechToText():
         plt.plot(x, y, label='Microphone Audio')
         plt.ylim((-1000, 1000))
         plt.tight_layout()
-        if self.quit:
-            plt.close()
+        # if self.quit:
+        #    plt.close()
 
 
     def close(self):
@@ -156,14 +155,16 @@ if __name__ == "__main__":
     ai = SpeechToText(index)
 
     # Start the terminate program thread to wait for 'q' to be pressed
-    threading.Thread(target=TerminateProgramThread, args=(ai,)).start()
-
+    quit = threading.Thread(target=TerminateProgramThread, args=(ai,))
+    quit.start()
+    print("Press 'q' to terminate Program")
     # Plot live Audio
-    ani = FuncAnimation(plt.gcf(), ai.animate, interval=100)
-    plt.tight_layout()
-    plt.show()
+    # ani = FuncAnimation(plt.gcf(), ai.animate, interval=500)
+    # plt.tight_layout()
+    # plt.show()
+    quit.join()
 
-    #print("Converting Speech To Text!")
-    #input("Enter any key to quit!\n")
+    
+
     ai.close()
     cv2.destroyAllWindows()
