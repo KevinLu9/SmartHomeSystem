@@ -81,13 +81,14 @@ class SpeechToText():
         self.SpeechToTextThread = threading.Thread(target=self.speech_recognition, args=(), name="SpeechToTextThread").start()
         self.audioInt = []
         self.THRESHOLD = threshold  # The audio magnitude threshold to continue to record/buffer without inputting to Vosk AI.
-    
+
+        
     def speech_recognition(self):
         while not self.quit:
             frames = self.audio.recordings.get()
             # convert frames to int so that we can plot them
             audioBit = b''.join(frames)
-
+            
             # Buffer audio before inputting into VOSK AI to prevent cut offs
             latestAudioBit = audioBit
             audioMagnitude = self.THRESHOLD
@@ -96,19 +97,20 @@ class SpeechToText():
                 self.audioInt = np.frombuffer(latestAudioBit, dtype='<i2').reshape(-1, self.audio.CHANNELS)
                 audioMagnitude = np.average(np.abs(self.audioInt))
                 if audioMagnitude > self.THRESHOLD:
-                    print(f"BUFFERING AUDIO {audioMagnitude}")
+                    #print(f"Buffering Audio: {audioMagnitude}")
                     time.sleep(self.audio.RECORD_SECONDS)  # Wait till next recording frames
                     # Get the frames and append them to the audio bits to input into the AI
                     frames = self.audio.recordings.get()
                     latestAudioBit = b''.join(frames)
                     audioBit += latestAudioBit
+            
 
             # Pass audio into vosk AI
             self.rec.AcceptWaveform(audioBit)
             result = self.rec.Result()
             text = json.loads(result)["text"]
             if text != "":
-                print(f"{text}", end=' ')
+                print(f"{text}")
         # Terminate SpeechToText Thread
         self.audio.close()
         print("SpeechToText was Successfully Terminated!")
@@ -139,7 +141,7 @@ def TerminateProgramThread(ai:SpeechToText):
     while True:
         if keyboard.is_pressed('q'):
             ai.close()
-            print("\n User Pressed 'q', Terminating Program!")
+            print("\nUser Pressed 'q', Terminating Program!")
             break
 
 if __name__ == "__main__":
